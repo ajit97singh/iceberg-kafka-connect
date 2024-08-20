@@ -20,6 +20,8 @@ package io.tabular.iceberg.connect.channel;
 
 import static java.util.stream.Collectors.toList;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.tabular.iceberg.connect.IcebergSinkConfig;
 import io.tabular.iceberg.connect.data.IcebergWriterFactory;
 import io.tabular.iceberg.connect.data.Offset;
@@ -27,9 +29,8 @@ import io.tabular.iceberg.connect.data.RecordWriter;
 import io.tabular.iceberg.connect.data.Utilities;
 import io.tabular.iceberg.connect.data.WriterResult;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.relocated.com.google.common.annotations.VisibleForTesting;
 import org.apache.iceberg.relocated.com.google.common.base.Preconditions;
@@ -45,8 +46,9 @@ class Worker implements Writer, AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(Worker.class);
   private final IcebergSinkConfig config;
   private final IcebergWriterFactory writerFactory;
-  private final Map<String, RecordWriter> writers;
+  private Map<String, RecordWriter> writers = new HashMap<>();
   private final Map<TopicPartition, Offset> sourceOffsets;
+  private static final ObjectMapper objectmapper = new ObjectMapper();
 
   Worker(IcebergSinkConfig config, Catalog catalog) {
     this(config, new IcebergWriterFactory(catalog, config));
@@ -92,12 +94,39 @@ class Worker implements Writer, AutoCloseable {
     sourceOffsets.put(
         new TopicPartition(record.topic(), record.kafkaPartition()),
         new Offset(record.kafkaOffset() + 1, record.timestamp()));
-
+    if(record.value() instanceof Map && !((Map<?, ?>) record.value()).containsKey("before")) {
+      return;
+    }
     if (config.dynamicTablesEnabled()) {
       routeRecordDynamically(record);
     } else {
       routeRecordStatically(record);
     }
+//    List<SinkRecord> records = new ArrayList<>();
+//    boolean advanceFlatteningAndExplode = Boolean.getBoolean("f");
+//    if (advanceFlatteningAndExplode) {
+//      records.addAll(explode(record));
+//    } else {
+//      records.add(record);
+//    }
+//    for (SinkRecord sinkRecord: records) {
+//      if (config.dynamicTablesEnabled()) {
+//        routeRecordDynamically(sinkRecord);
+//      } else {
+//        routeRecordStatically(sinkRecord);
+//      }
+//    }
+  }
+
+  private List<SinkRecord> explode(SinkRecord originalRecord) {
+    ArrayList<SinkRecord> explosionResult = new ArrayList<>();
+
+    for (Object field: objectmapper.convertValue(originalRecord.value(), List.class)) {
+
+    }
+
+
+    return explosionResult;
   }
 
   private void routeRecordStatically(SinkRecord record) {
@@ -133,11 +162,17 @@ class Worker implements Writer, AutoCloseable {
   }
 
   private void routeRecordDynamically(SinkRecord record) {
-    String routeField = config.tablesRouteField();
-    Preconditions.checkNotNull(routeField, String.format("Route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
+    String table = config.tablesRouteField();
+    String db = config.databaseRouteField();
+    String dbClusterPrefix = config.dbClusterPrefix();
+    String dataLakeName = config.dataLakeName();
+    Preconditions.checkNotNull(table, String.format("Table route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
+    Preconditions.checkNotNull(db, String.format("Database route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
 
-    String routeValue = extractRouteValue(record.value(), routeField);
-    if (routeValue != null) {
+    String routeTableValue = extractRouteValue(record.value(), table);
+    String routeDbValue = extractRouteValue(record.value(), db);
+    String routeValue = dataLakeName + "." + dbClusterPrefix + routeDbValue + "_" + routeTableValue;
+    if (routeTableValue != null && routeDbValue != null) {
       String tableName = routeValue.toLowerCase();
       writerForTable(tableName, record, true).write(record);
     }
@@ -153,7 +188,9 @@ class Worker implements Writer, AutoCloseable {
 
   private RecordWriter writerForTable(
       String tableName, SinkRecord sample, boolean ignoreMissingTable) {
-    return writers.computeIfAbsent(
-        tableName, notUsed -> writerFactory.createWriter(tableName, sample, ignoreMissingTable));
+    if (!writers.containsKey(tableName)) {
+      writers.put(tableName, writerFactory.createWriter(tableName, sample, ignoreMissingTable));
+    }
+    return writers.get(tableName);
   }
 }

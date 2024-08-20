@@ -25,7 +25,7 @@ public interface TestConstants {
   String BUCKET = "bucket";
   String AWS_ACCESS_KEY = "minioadmin";
   String AWS_SECRET_KEY = "minioadmin";
-  String AWS_REGION = "us-east-1";
+  String AWS_REGION = "ap-south-1";
 
   ObjectMapper MAPPER = new ObjectMapper();
 }

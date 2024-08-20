@@ -15,7 +15,6 @@ plugins {
 subprojects {
   apply plugin: "java"
   apply plugin: "com.diffplug.spotless"
-  apply plugin: "com.palantir.baseline-checkstyle"
   apply plugin: "maven-publish"
 
   group "io.tabular.connect"
@@ -29,10 +28,6 @@ subprojects {
 
   sourceCompatibility = "1.8"
   targetCompatibility = "1.8"
-
-  test {
-    useJUnitPlatform()
-  }
 
   jar {
     manifest {
@@ -57,10 +52,6 @@ subprojects {
       removeUnusedImports()
       licenseHeaderFile "$rootDir/header.txt"
     }
-  }
-
-  checkstyle {
-    toolVersion '9.3'
   }
 
   publishing {

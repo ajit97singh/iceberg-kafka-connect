@@ -148,14 +148,14 @@ public class TestContext {
   public S3Client initLocalS3Client() {
     try {
       return S3Client.builder()
-          .endpointOverride(new URI("http://localhost:" + getLocalMinioPort()))
+//          .endpointOverride(new URI("http://localhost:" + getLocalMinioPort()))
           .region(Region.of(AWS_REGION))
           .forcePathStyle(true)
           .credentialsProvider(
               StaticCredentialsProvider.create(
                   AwsBasicCredentials.create(AWS_ACCESS_KEY, AWS_SECRET_KEY)))
           .build();
-    } catch (URISyntaxException e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }

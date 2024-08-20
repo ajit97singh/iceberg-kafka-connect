@@ -22,8 +22,7 @@ import io.tabular.iceberg.connect.IcebergSinkConfig;
 import io.tabular.iceberg.connect.data.SchemaUpdate.Consumer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.data.Record;
@@ -43,6 +42,7 @@ public class IcebergWriter implements RecordWriter {
   private final String tableName;
   private final IcebergSinkConfig config;
   private final List<WriterResult> writerResults;
+  private final CustomTransformation customTransformation = new CustomTransformation();
 
   private RecordConverter recordConverter;
   private TaskWriter<Record> writer;
@@ -84,12 +84,26 @@ public class IcebergWriter implements RecordWriter {
   }
 
   private Record convertToRow(SinkRecord record) {
-    if (!config.evolveSchemaEnabled()) {
-      return recordConverter.convert(record.value());
-    }
+    Map<String, Object> oldRow = ((Map<String, Map<String, Object>>)record.value()).get("before");
+    Map<String, Object> newRow = ((Map<String, Map<String, Object>>)record.value()).get("after");
 
+    Map<String, Object> valueToConvert = new HashMap<>();
+
+    if(Objects.nonNull(newRow)) {
+      valueToConvert.putAll(newRow);
+      valueToConvert.put("__hevo__marked_deleted", false);
+    } else {
+      valueToConvert.putAll(oldRow);
+      valueToConvert.put("__hevo__marked_deleted", true);
+    }
+    if (!config.evolveSchemaEnabled()) {
+      return recordConverter.convert(valueToConvert);
+    }
+    if (config.advanceFlattenEnabled()) {
+      valueToConvert = customTransformation.advancedFlattenTransformation(valueToConvert);
+    }
     SchemaUpdate.Consumer updates = new Consumer();
-    Record row = recordConverter.convert(record.value(), updates);
+    Record row = recordConverter.convert(valueToConvert, updates);
 
     if (!updates.empty()) {
       // complete the current file
@@ -100,7 +114,7 @@ public class IcebergWriter implements RecordWriter {
       // initialize a new writer with the new schema
       initNewWriter();
       // convert the row again, this time using the new table schema
-      row = recordConverter.convert(record.value(), null);
+      row = recordConverter.convert(valueToConvert, null);
     }
 
     return row;

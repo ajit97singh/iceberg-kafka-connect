@@ -5,6 +5,7 @@ dependencies {
   implementation libs.avro
   implementation libs.slf4j
   compileOnly libs.bundles.kafka.connect
+  implementation 'org.apache.iceberg:iceberg-aws:1.5.2'
 
   testImplementation(testFixtures(project(":iceberg-kafka-connect-events")))
   testImplementation libs.hadoop.client

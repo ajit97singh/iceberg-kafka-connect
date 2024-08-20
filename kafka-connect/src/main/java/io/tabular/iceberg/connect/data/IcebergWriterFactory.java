@@ -19,7 +19,11 @@
 package io.tabular.iceberg.connect.data;
 
 import io.tabular.iceberg.connect.IcebergSinkConfig;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Table;
@@ -40,6 +44,7 @@ public class IcebergWriterFactory {
 
   private final Catalog catalog;
   private final IcebergSinkConfig config;
+  private final CustomTransformation customTransformation = new CustomTransformation();
 
   public IcebergWriterFactory(Catalog catalog, IcebergSinkConfig config) {
     this.catalog = catalog;
@@ -70,8 +75,14 @@ public class IcebergWriterFactory {
     try {
       StructType structType;
       if (sample.valueSchema() == null) {
+
+        Object sampleRow = ((Map<String, Object>) sample.value()).get("after");
+        if(sampleRow instanceof Map && config.advanceFlattenEnabled()) {
+          sampleRow = customTransformation.advancedFlattenTransformation((Map<String, Object>) sampleRow);
+        }
+
         structType =
-                SchemaUtils.inferIcebergType(sample.value(), config)
+                SchemaUtils.inferIcebergType(sampleRow, config)
                         .orElseThrow(() -> new DataException("Unable to create table from empty object"))
                         .asStructType();
       } else {

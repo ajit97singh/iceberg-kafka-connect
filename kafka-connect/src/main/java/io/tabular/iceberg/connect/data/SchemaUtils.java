@@ -303,14 +303,6 @@ public class SchemaUtils {
       } else if (value instanceof BigDecimal) {
         BigDecimal bigDecimal = (BigDecimal) value;
         return DecimalType.of(bigDecimal.precision(), bigDecimal.scale());
-      } else if (value instanceof Number) {
-        Number num = (Number) value;
-        Double dbl = num.doubleValue();
-        if (dbl.equals(Math.floor(dbl))) {
-          return LongType.get();
-        } else {
-          return DoubleType.get();
-        }
       } else if (value instanceof LocalDate) {
         return DateType.get();
       } else if (value instanceof LocalTime) {
@@ -319,6 +311,24 @@ public class SchemaUtils {
         return TimestampType.withZone();
       } else if (value instanceof LocalDateTime) {
         return TimestampType.withoutZone();
+      } else if (value instanceof Number) {
+        Number num = (Number) value;
+        Double dbl = num.doubleValue();
+        if (dbl.equals(Math.floor(dbl))) {
+          long longValue = num.longValue();
+          if(String.valueOf(num.longValue()).length()==10){
+            longValue *= 1000;
+          }
+          java.util.Date date = new java.util.Date(longValue);
+          java.util.Date dateFromLowestMobileNumber = new java.util.Date(5000000000L * 1000);
+          java.util.Date earliestDataDate = new java.util.Date(1262284200L * 1000); // 01-01-2010 00:00:00
+          if (date.before(dateFromLowestMobileNumber) && date.after(earliestDataDate)) {
+            return TimestampType.withoutZone();
+          }
+          return LongType.get();
+        } else {
+          return DoubleType.get();
+        }
       } else if (value instanceof List) {
         List<?> list = (List<?>) value;
         if (list.isEmpty()) {

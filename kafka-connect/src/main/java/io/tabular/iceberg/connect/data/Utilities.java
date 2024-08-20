@@ -31,10 +31,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+
 import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.Table;
@@ -54,6 +52,7 @@ import org.apache.iceberg.relocated.com.google.common.collect.Maps;
 import org.apache.iceberg.relocated.com.google.common.collect.Sets;
 import org.apache.iceberg.relocated.com.google.common.primitives.Ints;
 import org.apache.iceberg.types.TypeUtil;
+import org.apache.iceberg.types.Types;
 import org.apache.iceberg.util.PropertyUtil;
 import org.apache.kafka.connect.data.Struct;
 import org.slf4j.Logger;
@@ -173,6 +172,7 @@ public class Utilities {
     if (!idCols.isEmpty()) {
       identifierFieldIds =
           idCols.stream()
+                  .filter(colName -> Objects.nonNull(table.schema().findField(colName)))
               .map(colName -> table.schema().findField(colName).fieldId())
               .collect(toSet());
     }

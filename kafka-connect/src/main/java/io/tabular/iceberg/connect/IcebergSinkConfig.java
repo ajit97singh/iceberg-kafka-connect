@@ -69,6 +69,9 @@ public class IcebergSinkConfig extends AbstractConfig {
   private static final String TABLES_PROP = "iceberg.tables";
   private static final String TABLES_DYNAMIC_PROP = "iceberg.tables.dynamic-enabled";
   private static final String TABLES_ROUTE_FIELD_PROP = "iceberg.tables.route-field";
+  private static final String DATABASE_ROUTE_FIELD_PROP = "iceberg.database.route-field";
+  private static final String DATABASE_CLUSTER_PREFIX = "iceberg.database.cluster-prefix";
+  private static final String DATA_LAKE_NAME = "iceberg.data-lake.name";
   private static final String TABLES_DEFAULT_COMMIT_BRANCH = "iceberg.tables.default-commit-branch";
   private static final String TABLES_DEFAULT_ID_COLUMNS = "iceberg.tables.default-id-columns";
   private static final String TABLES_DEFAULT_PARTITION_BY = "iceberg.tables.default-partition-by";
@@ -79,6 +82,8 @@ public class IcebergSinkConfig extends AbstractConfig {
       "iceberg.tables.auto-create-enabled";
   private static final String TABLES_EVOLVE_SCHEMA_ENABLED_PROP =
       "iceberg.tables.evolve-schema-enabled";
+  private static final String ADVANCED_FLATTEN_ENABLED_PROP =
+          "iceberg.tables.advanced-flatten-enabled";
   private static final String TABLES_SCHEMA_FORCE_OPTIONAL_PROP =
       "iceberg.tables.schema-force-optional";
   private static final String TABLES_SCHEMA_CASE_INSENSITIVE_PROP =
@@ -136,6 +141,24 @@ public class IcebergSinkConfig extends AbstractConfig {
         Importance.MEDIUM,
         "Source record field for routing records to tables");
     configDef.define(
+            DATABASE_ROUTE_FIELD_PROP,
+            Type.STRING,
+            null,
+            Importance.MEDIUM,
+            "Source record field for routing records to database");
+    configDef.define(
+            DATABASE_CLUSTER_PREFIX,
+            Type.STRING,
+            null,
+            Importance.MEDIUM,
+            "Source record field for routing records to database");
+    configDef.define(
+            DATA_LAKE_NAME,
+            Type.STRING,
+            null,
+            Importance.MEDIUM,
+            "Source record field for routing records to database");
+    configDef.define(
         TABLES_DEFAULT_COMMIT_BRANCH,
         Type.STRING,
         null,
@@ -189,6 +212,12 @@ public class IcebergSinkConfig extends AbstractConfig {
         false,
         Importance.MEDIUM,
         "Set to true to add any missing record fields to the table schema, false otherwise");
+    configDef.define(
+        ADVANCED_FLATTEN_ENABLED_PROP,
+        Type.BOOLEAN,
+        false,
+        Importance.MEDIUM,
+        "Set to true to flatten columns containing JSON even in String form, false otherwise");
     configDef.define(
         CATALOG_NAME_PROP,
         Type.STRING,
@@ -337,6 +366,18 @@ public class IcebergSinkConfig extends AbstractConfig {
     return getString(TABLES_ROUTE_FIELD_PROP);
   }
 
+  public String databaseRouteField() {
+    return getString(DATABASE_ROUTE_FIELD_PROP);
+  }
+
+  public String dbClusterPrefix() {
+    return getString(DATABASE_CLUSTER_PREFIX);
+  }
+
+  public String dataLakeName() {
+    return getString(DATA_LAKE_NAME);
+  }
+
   public String tablesDefaultCommitBranch() {
     return getString(TABLES_DEFAULT_COMMIT_BRANCH);
   }
@@ -437,6 +478,10 @@ public class IcebergSinkConfig extends AbstractConfig {
 
   public boolean evolveSchemaEnabled() {
     return getBoolean(TABLES_EVOLVE_SCHEMA_ENABLED_PROP);
+  }
+
+  public boolean advanceFlattenEnabled() {
+    return getBoolean(ADVANCED_FLATTEN_ENABLED_PROP);
   }
 
   public boolean schemaForceOptional() {
