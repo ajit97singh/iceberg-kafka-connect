@@ -20,14 +20,10 @@ package io.tabular.iceberg.connect.channel;
 
 import static java.util.stream.Collectors.toList;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.tabular.iceberg.connect.IcebergSinkConfig;
-import io.tabular.iceberg.connect.data.IcebergWriterFactory;
-import io.tabular.iceberg.connect.data.Offset;
-import io.tabular.iceberg.connect.data.RecordWriter;
-import io.tabular.iceberg.connect.data.Utilities;
-import io.tabular.iceberg.connect.data.WriterResult;
+import io.tabular.iceberg.connect.data.*;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -102,31 +98,6 @@ class Worker implements Writer, AutoCloseable {
     } else {
       routeRecordStatically(record);
     }
-//    List<SinkRecord> records = new ArrayList<>();
-//    boolean advanceFlatteningAndExplode = Boolean.getBoolean("f");
-//    if (advanceFlatteningAndExplode) {
-//      records.addAll(explode(record));
-//    } else {
-//      records.add(record);
-//    }
-//    for (SinkRecord sinkRecord: records) {
-//      if (config.dynamicTablesEnabled()) {
-//        routeRecordDynamically(sinkRecord);
-//      } else {
-//        routeRecordStatically(sinkRecord);
-//      }
-//    }
-  }
-
-  private List<SinkRecord> explode(SinkRecord originalRecord) {
-    ArrayList<SinkRecord> explosionResult = new ArrayList<>();
-
-    for (Object field: objectmapper.convertValue(originalRecord.value(), List.class)) {
-
-    }
-
-
-    return explosionResult;
   }
 
   private void routeRecordStatically(SinkRecord record) {
@@ -172,10 +143,35 @@ class Worker implements Writer, AutoCloseable {
     String routeTableValue = extractRouteValue(record.value(), table);
     String routeDbValue = extractRouteValue(record.value(), db);
     String routeValue = dataLakeName + "." + dbClusterPrefix + routeDbValue + "_" + routeTableValue;
-    if (routeTableValue != null && routeDbValue != null) {
+    if (routeTableValue != null && !routeTableValue.isEmpty()
+            && routeDbValue != null && !routeDbValue.isEmpty()) {
       String tableName = routeValue.toLowerCase();
       writerForTable(tableName, record, true).write(record);
+
+      // Creating an audit record
+      if (config.auditTrailEnabled() &&
+              config.tablesCdcField() != null &&
+              !config.tablesCdcField().isEmpty() &&
+              !config.auditTableSuffix().isEmpty()) {
+        SinkRecord auditRecord = createAuditRecord(record);
+        String auditTableName = tableName + config.auditTableSuffix();
+        writerForTable(auditTableName, auditRecord, true).write(auditRecord);
+      }
     }
+  }
+
+
+  private SinkRecord createAuditRecord(SinkRecord record) {
+    DebeziumPacket debeziumPacket = objectmapper.convertValue(record.value(), DebeziumPacket.class);
+    debeziumPacket.setOp(null); // default interpreted operation is insert
+      return new SinkRecord(record.topic(),
+            record.kafkaPartition(),
+            record.keySchema(),
+            record.key(),
+            record.valueSchema(),
+            debeziumPacket,
+            record.timestamp()
+            );
   }
 
   private String extractRouteValue(Object recordValue, String routeField) {

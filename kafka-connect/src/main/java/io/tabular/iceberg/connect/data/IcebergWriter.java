@@ -18,6 +18,7 @@
  */
 package io.tabular.iceberg.connect.data;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.tabular.iceberg.connect.IcebergSinkConfig;
 import io.tabular.iceberg.connect.data.SchemaUpdate.Consumer;
 import java.io.IOException;
@@ -46,6 +47,7 @@ public class IcebergWriter implements RecordWriter {
 
   private RecordConverter recordConverter;
   private TaskWriter<Record> writer;
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   public IcebergWriter(Table table, String tableName, IcebergSinkConfig config) {
     this.table = table;
@@ -84,8 +86,9 @@ public class IcebergWriter implements RecordWriter {
   }
 
   private Record convertToRow(SinkRecord record) {
-    Map<String, Object> oldRow = ((Map<String, Map<String, Object>>)record.value()).get("before");
-    Map<String, Object> newRow = ((Map<String, Map<String, Object>>)record.value()).get("after");
+    DebeziumPacket debeziumPacket = objectMapper.convertValue(record.value(), DebeziumPacket.class);
+    Map<String, Object> oldRow = debeziumPacket.getBefore();
+    Map<String, Object> newRow = debeziumPacket.getAfter();
 
     Map<String, Object> valueToConvert = new HashMap<>();
 

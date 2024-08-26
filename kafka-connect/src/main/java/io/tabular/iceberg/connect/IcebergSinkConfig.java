@@ -68,6 +68,8 @@ public class IcebergSinkConfig extends AbstractConfig {
   private static final String CATALOG_NAME_PROP = "iceberg.catalog";
   private static final String TABLES_PROP = "iceberg.tables";
   private static final String TABLES_DYNAMIC_PROP = "iceberg.tables.dynamic-enabled";
+  private static final String AUDIT_TRAIL_PROP = "iceberg.tables.audit-enabled";
+  private static final String AUDIT_TRAIL_TABLE_SUFFIX_PROP = "iceberg.tables.audit-table-suffix";
   private static final String TABLES_ROUTE_FIELD_PROP = "iceberg.tables.route-field";
   private static final String DATABASE_ROUTE_FIELD_PROP = "iceberg.database.route-field";
   private static final String DATABASE_CLUSTER_PREFIX = "iceberg.database.cluster-prefix";
@@ -134,6 +136,18 @@ public class IcebergSinkConfig extends AbstractConfig {
         false,
         Importance.MEDIUM,
         "Enable dynamic routing to tables based on a record value");
+    configDef.define(
+            AUDIT_TRAIL_PROP,
+            Type.BOOLEAN,
+            false,
+            Importance.MEDIUM,
+            "Enable audit-trail tables based on a record value");
+    configDef.define(
+            AUDIT_TRAIL_TABLE_SUFFIX_PROP,
+            Type.STRING,
+            "",
+            Importance.MEDIUM,
+            "Suffix for the audit trail table");
     configDef.define(
         TABLES_ROUTE_FIELD_PROP,
         Type.STRING,
@@ -360,6 +374,13 @@ public class IcebergSinkConfig extends AbstractConfig {
 
   public boolean dynamicTablesEnabled() {
     return getBoolean(TABLES_DYNAMIC_PROP);
+  }
+  public boolean auditTrailEnabled() {
+    return getBoolean(AUDIT_TRAIL_PROP);
+  }
+
+  public String auditTableSuffix() {
+    return getString(AUDIT_TRAIL_PROP);
   }
 
   public String tablesRouteField() {
