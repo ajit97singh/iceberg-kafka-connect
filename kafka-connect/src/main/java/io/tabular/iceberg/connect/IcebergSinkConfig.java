@@ -380,7 +380,7 @@ public class IcebergSinkConfig extends AbstractConfig {
   }
 
   public String auditTableSuffix() {
-    return getString(AUDIT_TRAIL_PROP);
+    return getString(AUDIT_TRAIL_TABLE_SUFFIX_PROP);
   }
 
   public String tablesRouteField() {

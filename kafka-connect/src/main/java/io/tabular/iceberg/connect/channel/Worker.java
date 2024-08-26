@@ -140,6 +140,7 @@ class Worker implements Writer, AutoCloseable {
     Preconditions.checkNotNull(table, String.format("Table route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
     Preconditions.checkNotNull(db, String.format("Database route field cannot be null with dynamic routing at topic: %s, partition: %d, offset: %d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
 
+
     String routeTableValue = extractRouteValue(record.value(), table);
     String routeDbValue = extractRouteValue(record.value(), db);
     String routeValue = dataLakeName + "." + dbClusterPrefix + routeDbValue + "_" + routeTableValue;
@@ -162,14 +163,14 @@ class Worker implements Writer, AutoCloseable {
 
 
   private SinkRecord createAuditRecord(SinkRecord record) {
-    DebeziumPacket debeziumPacket = objectmapper.convertValue(record.value(), DebeziumPacket.class);
-    debeziumPacket.setOp(null); // default interpreted operation is insert
+    Map<String, Object> newValue = (Map<String, Object>) record.value();
+    newValue.put("op", null);
       return new SinkRecord(record.topic(),
             record.kafkaPartition(),
             record.keySchema(),
             record.key(),
             record.valueSchema(),
-            debeziumPacket,
+            newValue,
             record.timestamp()
             );
   }

@@ -86,9 +86,8 @@ public class IcebergWriter implements RecordWriter {
   }
 
   private Record convertToRow(SinkRecord record) {
-    DebeziumPacket debeziumPacket = objectMapper.convertValue(record.value(), DebeziumPacket.class);
-    Map<String, Object> oldRow = debeziumPacket.getBefore();
-    Map<String, Object> newRow = debeziumPacket.getAfter();
+    Map<String, Object> oldRow = ((Map<String, Map<String, Object>>)record.value()).get("before");
+    Map<String, Object> newRow = ((Map<String, Map<String, Object>>)record.value()).get("after");
 
     Map<String, Object> valueToConvert = new HashMap<>();
 

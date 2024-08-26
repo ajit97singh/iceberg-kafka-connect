@@ -18,6 +18,7 @@
  */
 package io.tabular.iceberg.connect.data;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.tabular.iceberg.connect.IcebergSinkConfig;
 
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class IcebergWriterFactory {
   private final Catalog catalog;
   private final IcebergSinkConfig config;
   private final CustomTransformation customTransformation = new CustomTransformation();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public IcebergWriterFactory(Catalog catalog, IcebergSinkConfig config) {
     this.catalog = catalog;
