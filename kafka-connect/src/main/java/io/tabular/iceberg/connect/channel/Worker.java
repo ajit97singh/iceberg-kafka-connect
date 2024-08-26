@@ -102,31 +102,6 @@ class Worker implements Writer, AutoCloseable {
     } else {
       routeRecordStatically(record);
     }
-//    List<SinkRecord> records = new ArrayList<>();
-//    boolean advanceFlatteningAndExplode = Boolean.getBoolean("f");
-//    if (advanceFlatteningAndExplode) {
-//      records.addAll(explode(record));
-//    } else {
-//      records.add(record);
-//    }
-//    for (SinkRecord sinkRecord: records) {
-//      if (config.dynamicTablesEnabled()) {
-//        routeRecordDynamically(sinkRecord);
-//      } else {
-//        routeRecordStatically(sinkRecord);
-//      }
-//    }
-  }
-
-  private List<SinkRecord> explode(SinkRecord originalRecord) {
-    ArrayList<SinkRecord> explosionResult = new ArrayList<>();
-
-    for (Object field: objectmapper.convertValue(originalRecord.value(), List.class)) {
-
-    }
-
-
-    return explosionResult;
   }
 
   private void routeRecordStatically(SinkRecord record) {

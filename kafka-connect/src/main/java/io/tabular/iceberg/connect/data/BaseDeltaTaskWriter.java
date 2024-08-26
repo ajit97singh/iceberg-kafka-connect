@@ -78,9 +78,7 @@ abstract class BaseDeltaTaskWriter extends BaseTaskWriter<Record> {
     if (op == Operation.UPDATE || op == Operation.DELETE) {
       writer.deleteKey(keyProjection.wrap(row));
     }
-    if (op == Operation.UPDATE || op == Operation.INSERT) {
-      writer.write(row);
-    }
+    writer.write(row);
   }
 
   class RowDataDeltaWriter extends BaseEqualityDeltaWriter {
